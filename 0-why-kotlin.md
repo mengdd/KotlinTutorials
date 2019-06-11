@@ -69,6 +69,13 @@ Kotlin还可以编译JavaScript, 在浏览器中运行.
 
 把Kotlin编译成本地语言, 不需要虚机也能运行.
 
+它最初的设计目的就是为了在没有虚机的平台上编译, 比如嵌入式设备或iOS.
+
+Kotlin/Native提供了和很多平台的互操作性(interoperability).
+比如OC和Swift可以调用Kotlin代码, 反过来也可以.
+
+它为后面的multiplatform提供了基础.
+
 ### Multiplatform
 [Kotlin Multiplatform](https://kotlinlang.org/docs/reference/multiplatform.html)
 
@@ -78,6 +85,7 @@ Multiplatform目前(2019.5)还是一个Kotlin1.2和1.3上的实验项目.
 
 ### iOS
 借助于[Intel Multi-OS Engine](https://software.intel.com/en-us/multi-os-engine)等工具可以让Kotlin代码运行在iOS设备上.
+(这个项目目前已经不支持了. )
 
 
 ### 桌面应用程序
@@ -111,7 +119,6 @@ Kotlin与Java编译过程的不同主要在于目标代码生成环节, Kotlin�
 ## 6.已有的实现和它之间的对比.
 对于Android开发者来说, Kotlin是为了取代Java而出现的.
 它的主要优点: 更简洁, 更安全, 更先进, 更好用.
-
 
 
 具体的点可以参见下面的参考资料,

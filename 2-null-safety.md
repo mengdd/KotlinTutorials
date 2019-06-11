@@ -101,6 +101,8 @@ fun foo(node: Node): String? {
 val aInt: Int? = a as? Int
 ```
 
+类型检查用关键字`is`.
+
 ### 集合过滤
 集合中有个`filterNotNull()`可以用来过滤出非空元素.
 ```
@@ -111,3 +113,4 @@ val intList: List<Int> = nullableList.filterNotNull()
 ## 参考资料
 * [Null Safety](https://kotlinlang.org/docs/reference/null-safety.html)
 * [Calling Java from Kotlin: Null-Safety and Platform Types](https://kotlinlang.org/docs/reference/java-interop.html#null-safety-and-platform-types)
+* [Type Checks and Casts](https://kotlinlang.org/docs/reference/typecasts.html)
