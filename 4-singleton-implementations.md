@@ -9,7 +9,7 @@
 我们先来回忆一下Java中的几种实现.
 
 方法1:
-```
+```java
 /**
  * 单例实现方法1:
  * <p>
@@ -35,7 +35,7 @@ public class Singleton1 {
 在多线程使用的时候, 有可能会创建多个实例, 即单例模式本身无法保证.
 
 方法2:
-```
+```java
 /**
  * 单例实现方法2: 将实例化操作提前.
  * 在静态初始化的时候创建实例, 保证线程安全.
@@ -58,7 +58,7 @@ public class Singleton2 {
 缺点就是如果我从来也没有用到过这个实例, 那么就白创建了.
 
 方法3:
-```
+```java
 /**
  * 单例实现方法3: 用synchronized关键字保证线程安全.
  * <p>
@@ -83,7 +83,7 @@ public class Singleton3 {
 但是创建之后仍然每次都会同步, 有效率问题.
 
 方法4:
-```
+```java
 /**
  * 单例实现方法4: 双重检查加锁.
  * 只有实例尚未创建才会进行同步.
@@ -113,7 +113,7 @@ public class Singleton4 {
 
 ## Kotlin单例实现1: Object声明
 怎么在Kotlin中实现一个单例呢? 最简单的方法就是用对象声明:
-```
+```kotlin
 object SingletonOne {
     
 }
@@ -136,7 +136,7 @@ public final class SingletonOne {
 怎样, 反编译后发现这不就是上面的第二种实现方式吗, 只不过这里`INSTANCE`域是public的, 所以没有提供getInstance方法.
 
 使用这样的单例时, 直接用类名就可以访问其方法:
-```
+```kotlin
 object SingletonOneWithMethod {
     private const val age = 20
     fun foo() {
@@ -151,7 +151,7 @@ fun main() {
 
 ## Kotlin单例实现2: class + companion object
 单例实现的第二种方法:
-```
+```kotlin
 class SingletonTwo private constructor() {
     companion object {
         private var instance: SingletonTwo? = null
@@ -166,7 +166,7 @@ class SingletonTwo private constructor() {
 
 这种实现方法比上一种好在哪里呢?
 首先, 它是第一次用到的时候才初始化的, 如果没用到就永远也不会初始化. 其次, 它可以在构造中传入参数.
-```
+```kotlin
 class SingletonTwoWithArguments private constructor(
     private val name: String,
     private val age: Int
@@ -199,7 +199,7 @@ fun main() {
 
 ## Kotlin单例实现3: 为了线程安全, 加同步
 这是对上一个实现的改进, 把方法改为同步的, 对应于Java的实现3.
-```
+```kotlin
 class SingletonThree private constructor() {
     companion object {
         private var instance: SingletonThree? = null
@@ -214,7 +214,7 @@ class SingletonThree private constructor() {
 
 ## Kotlin单例实现4: 双重检查加锁
 再对上面的实现做个改进:
-```
+```kotlin
 class SingletonFour private constructor() {
     companion object {
         @Volatile
@@ -241,7 +241,7 @@ class SingletonFour private constructor() {
 `lazy()`接收一个lambda作为初始化方法, 只有第一次访问的时候会被调用, 然后结果就被保存下来了, 之后的访问会直接返回这个结果. 默认的线程安全模式是`LazyThreadSafetyMode.SYNCHRONIZED`.
 
 使用lazy来实现单例:
-```
+```kotlin
 class SingletonFive private constructor() {
     companion object {
         val instance: SingletonFive by lazy {
