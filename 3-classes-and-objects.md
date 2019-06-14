@@ -82,9 +82,9 @@ Constructor
 继承用`:`.
 方法覆写的时候`override`关键字是必须的.
 
-Kotlin中默认是不鼓励继承的:
-* 类需要显示声明为`open`才可以被继承.
-* 方法要显示声明为`open`才可以被覆写.
+Kotlin中默认是不鼓励继承的(类和方法默认都是`final`的):
+* 类需要显式声明为`open`才可以被继承.
+* 方法要显式声明为`open`才可以被覆写.
 
 抽象类(abstract)默认是`open`的.
 一个已经标记为`override`的方法是`open`的, 如果想要禁止它被进一步覆写, 可以在前面加上`final`.
@@ -185,7 +185,7 @@ data class User(val name: String, val age: Int)
 * 主构造至少要有一个参数.
 * 所有的主构造参数都要被标记为`val`或`var`.
 * data class不能为abstract, open, sealed或inner.
-* Kolin 1.1之前, 还只能实现接口.
+* Kotlin 1.1之前, 还只能实现接口. 1.1之后, 可以继承其他类了.
 
 注意: 
 * 如果`equals()`, `hashCode()`或 `toString()`有显式的实现, 或基类有`final`版本, 这三个方法将不会被生成, 而使用现有版本.
@@ -193,6 +193,13 @@ data class User(val name: String, val age: Int)
 ```
 data class UserWithDefaults(val name: String = "", val age: Int = 0)
 ```
+* 生成的方法只会使用主构造中声明的属性, 如果想要排除某些属性, 可以放在body中声明.
+
+### 实践建议
+虽然data class中的属性可以被声明为`val`或`var`, 但是推荐使用`val`, 即不可变(immutable)的属性, 从而让类的实例是不可变的.
+
+不可变的实例在创建完成之后就不会再改变值.
+可以用`copy()`方法创建新的实例, 修改一些属性.
 
 ## 参考
 * [Classes](https://kotlinlang.org/docs/reference/classes.html)
