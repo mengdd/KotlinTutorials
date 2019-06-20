@@ -262,8 +262,10 @@ fun main() {
 ```
 从执行结果可以看出"lazy body"只被输出了一次, 并且实例是同一个.
 
-## Bonus: 实现5: 用Dagger来实现单例
-[Dagger](https://github.com/google/dagger)是Android开发中不可或缺的一个好工具. 
+## Bonus: 用Dagger来实现单例
+[Dagger](https://github.com/google/dagger)是Android开发中不可或缺的一个好工具.
+
+仔细想想在工作中虽然用了很多单例, 但很少是自己实现的, 多数是利用Dagger.
 
 Dagger的使用这里不展开介绍了, 只说说单例相关的.
 
@@ -277,4 +279,58 @@ Dagger中的`@Singleton`是一个常用的scope注解.
 通常我会把我的主component用`@Singleton`标记, 然后把所有全局单例用`@Singleton`标记.
 
 除此之外我们还可以定义其他特定scope下的单例, 比如给Activity的component定义一个scope, 让一些依赖成为这个scope意义下的单例.
+
+举个例子: 
+比如我有一个类叫`PreferencesUtils`, 在构造上标记`@Inject`把它加入graph, 
+再加上`@Singleton`让它成为单例:
+```kotlin
+@Singleton
+class PreferencesUtils @Inject constructor(appContext: Application)
+```
+在生成的DaggerXXXXComponent类的`initialize`发面里面可以看到:
+
+```java
+this.preferencesUtilsProvider = DoubleCheck.provider(PreferencesUtils_Factory.create(applicationProvider));
+```
+
+如果类上没有加`@Singleton`注解, 那么这行就只是:
+```java
+this.preferencesUtilsProvider = PreferencesUtils_Factory.create(applicationProvider);
+```
+
+从`DoubleCheck`这个类中可以看到, Dagger内部的单例实现是一个双重检查加锁:
+```java
+public final class DoubleCheck<T> implements Provider<T>, Lazy<T> {
+  private static final Object UNINITIALIZED = new Object();
+
+  private volatile Provider<T> provider;
+  private volatile Object instance = UNINITIALIZED;
+
+  private DoubleCheck(Provider<T> provider) {
+    assert provider != null;
+    this.provider = provider;
+  }
+
+  @SuppressWarnings("unchecked") // cast only happens when result comes from the provider
+  @Override
+  public T get() {
+    Object result = instance;
+    if (result == UNINITIALIZED) {
+      synchronized (this) {
+        result = instance;
+        if (result == UNINITIALIZED) {
+          result = provider.get();
+          instance = reentrantCheck(instance, result);
+          /* Null out the reference to the provider. We are never going to need it again, so we
+           * can make it eligible for GC. */
+          provider = null;
+        }
+      }
+    }
+    return (T) result;
+  }
+  // ...
+}
+
+```
 
