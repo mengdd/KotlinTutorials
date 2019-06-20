@@ -21,8 +21,9 @@ EnumClass.values(): Array<EnumClass>
 ```
 ## Sealed Class
 枚举是Java的同类产物, 而sealed class则是kotlin推出的新产品.
+(C#中也有: [sealed class in C sharp](https://www.c-sharpcorner.com/article/sealed-class-in-C-Sharp/))
 
-它定义了一个sealed class, 是用来被继承的, 它的子类就是有限的几种情况.
+首先定义一个sealed class, 它是抽象的, 是用来被继承的, 但是它又限制了继承的自由, 它的子类就是有限的几种情况.
 
 ### 怎么写sealed class:
 
@@ -61,6 +62,7 @@ sealed class用来表达有限的继承体系, 是枚举类型的一种扩展形
 
 Sealed Class比枚举更方便的地方:
 * 枚举要求构造相同, 但sealed class可以传入不同的实例域.
+比如上面例子中的`Const`和`Sum`, 它们的构造传入的参数就不同.
 
 ## 参考
 * [Enum Classes](https://kotlinlang.org/docs/reference/enum-classes.html)
