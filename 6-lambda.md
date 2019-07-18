@@ -1,4 +1,6 @@
 # Lambda表达式和高阶函数
+在Kotlin中函数是第一公民, 不像Java一样, 函数一定需要写在某个类里面, Kotlin中的函数也可以直接写在文件里.
+
 Lambda表达式并不是什么新东西, Java 8就有了.
 它的存在主要是为了让代码更加简洁.
 
@@ -109,14 +111,15 @@ typealias ClickHandler = (Button, ClickEvent) -> Unit
 ### 实例化函数类型
 实例化函数类型有好几种方法:
 * 用函数字面值(function literal)的代码块: lambda表达式, 匿名函数.
-* 使用已有的声明引用: 函数, 属性, 构造函数.
+* 使用已有的声明引用: 函数, 属性, 构造函数. `::`的用法参见[Callable Reference](https://kotlinlang.org/docs/reference/reflection.html#callable-references).
 * 函数类型还可以当做接口被类实现, 那么创建这个类的实例就是创建了函数类型的实例.
 
 ### 调用函数类型的实例
 函数类型声明了, 也实例化了, 怎么调用呢?
 可以用`invoke`操作符, 也可以直接用名称调用.
 
-如果有接受者类型, 那么接受者类型需要作为第一个参数, 也可以放在点前面, 向扩展函数一样调用.
+如果有接受者类型(receiver), 那么接受者对象需要作为第一个参数.
+另一种方式也可以将接受者对象放在点(`.`)前面, 像扩展函数一样调用.
 
 ```kotlin
 val stringPlus: (String, String) -> String = String::plus
@@ -132,5 +135,6 @@ println(2.intPlus(3)) // extension-like call
 
 ## 参考
 * [Higher-Order Functions and Lambdas](https://kotlinlang.org/docs/reference/lambdas.html)
-* [浅谈Kotlin语法篇之Lambda表达式完全解析(六)](https://zhuanlan.zhihu.com/p/36124955)
+* [Functions](https://kotlinlang.org/docs/reference/functions.html)
 * [Returns and Jumps](https://kotlinlang.org/docs/reference/returns.html)
+* [Callable Reference](https://kotlinlang.org/docs/reference/reflection.html#callable-references)
