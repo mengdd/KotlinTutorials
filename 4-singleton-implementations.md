@@ -262,6 +262,27 @@ fun main() {
 ```
 从执行结果可以看出"lazy body"只被输出了一次, 并且实例是同一个.
 
+## Kotlin单例实现6: `isInitialized`
+声明保存实例的变量是`lateinit`的, 判断是否已经初始化用: [isInitialized](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/is-initialized.html).
+
+```kotlin
+class SingletonSix private constructor() {
+    companion object {
+        private lateinit var instance: SingletonSix
+        fun getInstance(): SingletonSix {
+            synchronized(this) {
+                if (!::instance.isInitialized) {
+                    instance = SingletonSix()
+                }
+            }
+            return instance
+        }
+    }
+}
+```
+这个实现类似于实现3.
+所以要进一步改成双重加锁(实现4)也是可以的.
+
 ## Bonus: 用Dagger来实现单例
 [Dagger](https://github.com/google/dagger)是Android开发中不可或缺的一个好工具.
 
