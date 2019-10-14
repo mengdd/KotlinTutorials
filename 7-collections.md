@@ -147,7 +147,10 @@ public inline fun <T, R, C : MutableCollection<in R>> Iterable<T>.flatMapTo(dest
     return destination
 }
 ```
-虽然都是进行转换, `map`的转换是一对一的, 元素的个数不会变; 而`flatMap`的转换是一对多的, 转换后元素变成了集合, 有一个铺平的过程, 转换后生成的集合元素会被合并返回.
+
+虽然都是进行转换, 区别主要是transform的类型:
+* `map`是: `transform: (T) -> R`, `map`的转换是一对一的, 元素的个数不会变.
+* `flatMap`是: `transform: (T) -> Iterable<R>`, 说明`flatMap`的转换是一对多的, 转换后元素变成了集合, 有一个铺平的过程, 转换后生成的集合元素会被合并返回.
 
 想明白了`flatMap`的用法, 解决问题2就比较容易了. 有多个学生, 那么我们需要统计每个学生订单里的书:
 ```
@@ -215,9 +218,10 @@ if (bookBrownBear in books) {
 
  
 下面列出几点:
-* 可以在遍历的时候删除元素了. -> `MutableIterator. `
-* 根据某一标准进行分组, 把list转换成map. -> `groupBy()`. 注意和`associateBy()`的区别: `associateBy`会把符合条件的最后一个值作为value, 而`groupBy()`的value是list.
+* 可以在遍历的时候删除元素了. -> `MutableIterator`.
+* 根据某一标准进行分组, 把list转换成map. -> `groupBy()`. 注意和`associateBy()`的区别: `associateBy`会把符合条件的最后一个值作为value, 而`groupBy()`的value是所有符合条件的元素的list.
 * 更加方便的获取元素的方法: `elementAtOrElse()`, `elementAtOrNull()`, `getOrElse()`, `getOrDefault()`.
+* 列表元素去重除了转换成set以外还可以用`distinct()`.
 
 集合这部分的知识点实在太多, 也很细节, 无法一一列举, 感兴趣的话可以看看官方文档.
 
