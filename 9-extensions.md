@@ -117,7 +117,13 @@ fun ImageView.setImageUrl(url: String?) {
 myImageView.setImageUrl("myUrl")
 ```
 
+### 其他常见应用情形
+* 工具类方法, 可以避免写以前Java中的那种辅助静态方法. 比如对`View`类的扩展.
+* 类型转换: `toXXX`和`asXXX`, 比如`Map.toList()`, `Int.toPrice()`, `User.asPerson()`等.
+* 为了流式操作, 转换返回值, 结合lambda, 简化DSL, 比如`T.apply{}`, `T.let{}`.
+
+
 ## 参考
 * 官方文档: [Extensions](https://kotlinlang.org/docs/reference/extensions.html)
 * Android KTX: [Android KTX](https://developer.android.com/kotlin/ktx)
-* [[Kotlin Pearls 6] Extensions: The Good, The Bad and The Ugly](https://proandroiddev.com/kotlin-pearls-6-extensions-the-good-the-bad-and-the-ugly-23c88fcab23)
+* [[Kotlin Pearls 6] Extensions: The Good, The Bad and The Ugly](https://proandroiddev.com/kotlin-pearls-6-extensions-the-good-the-bad-and-the-ugly-23c88fcab235)
