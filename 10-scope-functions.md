@@ -33,7 +33,7 @@ str?.let {
 ```
 
 ### 返回值:
-* `apply`和`also`返回上下文对象自己.
+* `apply`和`also`返回上下文对象自己. (可以记忆为`a`开头的两个方法返回自己.)
 * `let`, `run`和`with`返回lambda的结果.
 
 ### 是否是扩展函数:
@@ -54,6 +54,12 @@ data class Pet(var name: String? = null, var age: Int? = null, var type: String?
 ```
 person?.pet?.name?.let { println("pet name is: $it") }
 ```
+可以结合`?:`来设置为空时做什么:
+```
+person?.pet?.name?.let { println("pet name is: $it") } ?: println("there is no pet name")
+```
+这样不论是person还是pet还是name为空, 都会打印出"there is no pet name".
+
 * `with`: 需要在上下文对象上运行代码, 不需要返回值; 对对象进行一组函数调用.
 * `run`: 对象配置, 并计算一个结果返回.
 * `apply`: 对象配置. 比如Android中常见的Fragment和Intent的创建和参数设置.
