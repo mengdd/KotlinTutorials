@@ -70,6 +70,19 @@ foo.`is`(bar)
 
 但是, 首先需要考虑是不是名字起得不好, 如果可以改名(不是第三方代码), 优先考虑改名.
 
+比较常见的一个使用情形是在写测试的时候, Mockito中的`when`就需要转义:
+```
+Mockito.`when`(xxx.foo()).thenReturn(yyy)
+```
+因为Mockito是一个Java的第三方库, 我们没法改它.
+
+另一个解决办法是使用import alias, 给这个方法取个别名:
+```
+import org.mockito.Mockito.`when` as whenever
+```
+这样在使用的时候就可以用`whenever`来代替了`when`了.
+import alias通常用来解决命名冲突的问题.
+
 ### SAM Conversions
 SAM: Single Abstract Method.
 
