@@ -276,7 +276,7 @@ fun main() = runBlocking {
 
 `coroutineScope()`方法也可以创建scope. 当我们需要以结构化的方式在suspend函数内部启动新的协程, 我们创建的新的scope, 自动成为suspend函数被调用的外部scope的child.
 
-上面的父子关系, 可以进一步抽象到, 没有parent协程, 由scope来管理其中所有的子协程.
+所以上面的父子关系, 可以进一步抽象到, 没有parent协程, 由scope来管理其中所有的子协程.
 
 Scope在实际应用中解决什么问题呢? 如果我们的应用中, 有一个对象是有自己的生命周期的, 但是这个对象又不是协程, 比如Android应用中的Activity, 其中启动了一些协程来做异步操作, 更新数据等, 当Activity被销毁的时候需要取消所有的协程, 来避免内存泄漏. 我们就可以利用`CoroutineScope`来做这件事: 创建一个`CoroutineScope`对象和activity的生命周期绑定, 或者让activity实现`CoroutineScope`接口.
 
@@ -302,6 +302,14 @@ A CoroutineScope keeps track of all your coroutines, and it can cancel all of th
 `launch(Dispatchers.Default) { ... }`和`GlobalScope.launch { ... }`用的dispatcher是一样的.
 
 `GlobalScope`启动的协程并不会保持进程活跃. 它们就像daemon threads(守护线程)一样, 如果JVM发现没有其他一般的线程, 就会关闭.
+
+## Key takeaways
+* Coroutine协程机制: suspend, resume, 简化回调代码.
+* suspend方法.
+* 启动协程的几种方法.
+* Dispatcher指定线程.
+* Structured Concurrency: 依靠scope来架构化管理协程.
+
 
 ## 参考
 * [Coroutine Wiki](https://en.wikipedia.org/wiki/Coroutine)
