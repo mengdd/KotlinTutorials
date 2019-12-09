@@ -324,6 +324,15 @@ StaticMethodsDemoClass.sayHelloStatic();
 
 ### 其他
 Kotlin方法支持默认参数, 在Java中只有全部参数的方法签名才是可见的. 如果你希望对Java暴露多个方法重载, 要给方法加上`@JvmOverloads`.
+比如在Kotlin中写一个自定义View的构造函数:
+```
+class DialView @JvmOverloads constructor(
+   context: Context,
+   attrs: AttributeSet? = null,
+   defStyleAttr: Int = 0
+) : View(context, attrs, defStyleAttr) {
+}
+```
 
 还可以利用
 `@JvmName`来给方法重命名. 因为在Kotlin中是扩展方法, 在Java中只是一个静态方法, 名字可能不够直观.
