@@ -1,4 +1,4 @@
-# Kotlin和Java的互相调用
+# Kotlin和Java的双向互操作
 Kotlin和Java是有互操作性的(Interoperability). Kotlin和Java代码可以互相调用.
 
 为什么在一个项目里这两种语言会同时存在呢?

@@ -1,4 +1,4 @@
-# Coroutines Channels
+# Coroutines Channels: Kotlin协程通信
 Java中的多线程通信, 总会涉及到共享状态(shared mutable state)的读写, 有同步, 死锁等问题要处理.
 
 协程中的Channel用于协程间的通信, 它的宗旨是:
