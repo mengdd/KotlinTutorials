@@ -3,7 +3,9 @@ Kotlin tutorials for Android developers.
 
 # Contents
 
-[为什么要学习Kotlin Why Kotlin](./0-why-kotlin.md)
+[为什么要学习Kotlin Why Koltlin](./0-why-kotlin.md)
+
+[给Java开发者看的Kotlin基础 Basics](./1-kotlin-basics-for-java-developers.md)
 
 [空安全: Kotlin的一大卖点 Null Safety](./2-null-safety.md)
 
@@ -21,13 +23,13 @@ Kotlin tutorials for Android developers.
 
 [扩展方法与属性 Extensions](./9-extensions.md)
 
+[作用域函数 Scope Functions](./10-scope-functions.md)
+
 [与Java的相互调用 Java Interop](./11-java-interop.md)
 
 [协程基础 Coroutines Basics](./12-coroutines-basics.md)
 
 [协程间通信 Coroutines Channels](./13-coroutines-channels.md)
-
-[协程在Android的应用 Coroutines in Android](./14-coroutines-in-Android.md)
 
 [协程在Android的应用 Coroutines in Android](./14-coroutines-in-Android.md)
 
@@ -37,3 +39,7 @@ Kotlin tutorials for Android developers.
 
 [内联 Inline](./17-inline.md)
 
+[Kotlin DSL for HTML](./18-kotlin-dsl.mdd)
+
+## Resources
+Source code: [HelloKotlin](https://github.com/mengdd/HelloKotlin)

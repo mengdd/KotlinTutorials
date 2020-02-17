@@ -1,4 +1,4 @@
-# Scoped Functions: Kotlin中的作用域函数
+# Scope Functions: Kotlin中的作用域函数
 Kotlin标准库提供了5个scope functions(作用域函数): `let`, `run`, `with`, `apply`, `also`.
 
 作用域函数的目的是为了在对象的上下文中执行一段代码.
