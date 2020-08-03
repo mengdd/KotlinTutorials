@@ -142,7 +142,7 @@ fun main() = runBlocking {
 `Job`还有一个重要的用途是`cancel()`, 用于取消不再需要的协程任务.
 
 ### async: 从协程返回值
-`async`开启线程, 返回`Deferred<T>`, `Deferred<T>`是`Job`的子类, 有一个`await()`函数, 可以返回协程的结果.
+`async`开启协程, 返回`Deferred<T>`, `Deferred<T>`是`Job`的子类, 有一个`await()`函数, 可以返回协程的结果.
 
 `await()`也是suspend函数, 只能在协程之内调用.
 
