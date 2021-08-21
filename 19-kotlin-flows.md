@@ -132,6 +132,47 @@ class LatestNewsActivity : AppCompatActivity() {
 }
 ```
 
+这里有个扩展方法也挺好的:
+```kotlin
+class FlowObserver<T> (
+    lifecycleOwner: LifecycleOwner,
+    private val flow: Flow<T>,
+    private val collector: suspend (T) -> Unit
+) {
+
+    private var job: Job? = null
+
+    init {
+        lifecycleOwner.lifecycle.addObserver(LifecycleEventObserver {
+                source: LifecycleOwner, event: Lifecycle.Event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> {
+                    job = source.lifecycleScope.launch {
+                        flow.collect { collector(it) }
+                    }
+                }
+                Lifecycle.Event.ON_STOP -> {
+                    job?.cancel()
+                    job = null
+                }
+                else -> { }
+            }
+        })
+    }
+}
+
+
+inline fun <reified T> Flow<T>.observeOnLifecycle(
+    lifecycleOwner: LifecycleOwner,
+    noinline collector: suspend (T) -> Unit
+) = FlowObserver(lifecycleOwner, this, collector)
+
+inline fun <reified T> Flow<T>.observeInLifecycle(
+    lifecycleOwner: LifecycleOwner
+) = FlowObserver(lifecycleOwner, this, {})
+```
+TODO: 看一下官方的`repeatOnLifecycle`是不是就是这个意思.
+
 ### `shareIn`和`stateIn`
 `shareIn`可以保证只有一个数据源被创造, 并且被所有collectors收集.
 比如:
@@ -225,3 +266,4 @@ onCreateView(...) {
 * [Migrating from LiveData to Kotlin’s Flow](https://medium.com/androiddevelopers/migrating-from-livedata-to-kotlins-flow-379292f419fb)
 * [Substituting Android’s LiveData: StateFlow or SharedFlow?](https://proandroiddev.com/should-we-choose-kotlins-stateflow-or-sharedflow-to-substitute-for-android-s-livedata-2d69f2bd6fa5)
 * [Learning State & Shared Flows with Unit Tests](https://codingwithmohit.com/coroutines/learning-shared-and-state-flows-with-tests/)
+* [Reactive Streams on Kotlin: SharedFlow and StateFlow](https://www.raywenderlich.com/22030171-reactive-streams-on-kotlin-sharedflow-and-stateflow)
