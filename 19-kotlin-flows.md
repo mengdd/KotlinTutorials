@@ -32,7 +32,9 @@ Android官方有一篇专门的文档来介绍二者: [StateFlow and SharedFlow 
 StateFlow继承于SharedFlow, SharedFlow继承于Flow.
 
 基本关系如下:
+
 ![kotlin flow](./images/kotlin-flow.png)
+
 
 * [Flow](https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/)
 基类. Cold.
