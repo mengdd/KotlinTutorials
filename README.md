@@ -20,7 +20,8 @@ Kotlin tutorials for Android developers.
 * [15 协程中流在Android的应用 Coroutines Flow in Android](./15-coroutines-flow-in-Android.md)
 * [16 属性与代理属性 Properties](./16-properties.md)
 * [17 内联 Inline](./17-inline.md)
-* [18 Kotlin DSL for HTML](./18-kotlin-dsl.mdd)
+* [18 Kotlin DSL for HTML](./18-kotlin-dsl.md)
+* [19 Kotlin Flows](./19-kotlin-flows.md)
 
 ## Resources
 Source code: [HelloKotlin](https://github.com/mengdd/HelloKotlin)
