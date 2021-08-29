@@ -1,14 +1,11 @@
 # Kotlin Flows
 
-本文想要回答的问题:
-* Flow是什么, 怎么用?
-* Flow的不同类型, StateFlow, SharedFlow区别?
-* Flow使用时的注意事项?
-* MVVM pattern中, Flow的角色和位置?
-* 操作符`stateIn`, `shareIn`的用法和区别?
-* StateFlow和LiveData的比较?
-* 在Compose应用中, Flow和State的使用? 各自的作用?
-* Flow的单元测试
+本文包含的内容:
+* Flow是什么, 基本概念和用法.
+* Flow的不同类型, StateFlow和SharedFlow比较.
+* Flow在Android中的使用
+    - 安全收集.
+    - 操作符`stateIn`, `shareIn`的用法和区别.
 
 ## Coroutines Flow Basics
 ### Flow是什么
@@ -25,8 +22,17 @@ Flow使用suspend方法来生产/消费值, 数据流可以做异步计算.
 
 关于Flow的基本用法, 19年底写的这篇[coroutines flow in Android](./15-coroutines-flow-in-Android.md)可以温故知新.
 
-### Flow的类型
+### Flow的操作符
+一个Flow操作符的可视化小网站: [FlowMarbles](https://flowmarbles.com/).
+
+## Flow的不同类型
+### SharedFlow and StateFlow
+应用程序里比较常用的类型是SharedFlow和StateFlow. 
+Android官方有一篇专门的文档来介绍二者: [StateFlow and SharedFlow ](https://developer.android.com/kotlin/flow/stateflow-and-sharedflow)
 StateFlow继承于SharedFlow, SharedFlow继承于Flow.
+
+基本关系如下:
+![kotlin flow](./images/kotlin-flow.png)
 
 * [Flow](https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/)
 基类. Cold.
@@ -39,12 +45,30 @@ Flow的两大特性: Context preservation; Exception transparency.
 在sharedFlow上的collect call永远不会正常complete, 还有Flow.launchIn.
 可以配置replay and buffer overflow strategy.
 
+如果subscriber suspend了, sharedflow会suspend这个stream, buffer这个要发射的元素, 等待subscriber resume.
+Because onBufferOverflow is set with `BufferOverflow.SUSPEND`, the flow will suspend until it can deliver the event to all subscribers.
+
+默认参数:
+```kotlin
+public fun <T> MutableSharedFlow(
+    replay: Int = 0,
+    extraBufferCapacity: Int = 0,
+    onBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND
+)
+```
+total buffer是: `replay + extraBufferCapacity`.
+如果total buffer是0, 那么onBufferOverflow只能是`onBufferOverflow = BufferOverflow.SUSPEND`.
+
+关于reply和buffer, 这个[文章](https://www.raywenderlich.com/22030171-reactive-streams-on-kotlin-sharedflow-and-stateflow#toc-anchor-005)
+有详细的解释, 并且配有动图.
+
 * [StateFlow](https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/index.html)
 继承SharedFlow, hot flow, 和是否有collector收集无关, 永不complete.
 
 可以通过`value`属性访问当前值.
 有conflated特性, 会跳过太快的更新, 永远返回最新值.
 Strong equality-based conflation: 会通过`equals()`来判断值是否发生改变, 如果没有改变, 则不会通知collector.
+因为conflated的特性, StateFlow赋值的时候要注意使用不可变的值.
 
 #### cold vs hot
 cold stream 可以重复收集, 每次收集, 会对每一个收集者单独开启一次.
@@ -64,9 +88,8 @@ hot stream 永远发射不同的值, 和是否有人收集无关, 永远不会�
 * `StateFlow`是conflated: 如果新的值和旧的值一样, 不会传播.
 * `SharedFlow`需要合理设置buffer和replay策略.
 
-
 互相转换:
-SharedFlow用了`distinctUntilChanged`以后变成StateFlow.
+`SharedFlow`用了`distinctUntilChanged`以后变成`StateFlow`.
 
 ```kotlin
 // MutableStateFlow(initialValue) is a shared flow with the following parameters:
@@ -78,16 +101,37 @@ shared.tryEmit(initialValue) // emit the initial value
 val state = shared.distinctUntilChanged() // get StateFlow-like behavior
 ```
 
-### Flow的操作符
-一个Flow操作符的可视化小网站: [FlowMarbles](https://flowmarbles.com/).
+RxJava的等价替代:
+* `PublishSubject` -> `SharedFlow`.
+* `BehaviorSubject` -> `StateFlow`.
 
 ## Use Flow in Android
-### StateFlow
+### 发送事件(Event或Effects): SharedFlow
+因为SharedFlow没有conflated特性, 所以适合发送事件, 即便值变化得快也是每个都发送.
+```kotlin
+private val _sharedViewEffects = MutableSharedFlow<SharedViewEffects>() // 1
+val sharedViewEffects = _sharedViewEffects.asSharedFlow() // 2
+```
+这里用了`asSharedFlow`来创建一个`ReadonlySharedFlow`.
+
+SharedFlow发射元素有两个方法:
+* `emit`: suspend方法.
+* `tryEmit`: 非suspend方法.
+
+因为`tryEmit`是非suspend的, 适用于有buffer的情况.
+
+### 保存暴露UI状态: StateFlow
 `StateFlow`是一个state-holder, 可以通过`value`读到当前状态值.
 一般会有一个`MutableStateFlow`类型的Backing property.
 
 `StateFlow`是hot的, collect并不会触发producer code.
 当有新的consumer时, 新的consumer会接到上次的状态和后续的状态.
+
+使用StateFlow时, 发射新元素只需要赋值:
+```kotlin
+mutableState.value = newState
+```
+注意这里新值和旧的值要`equals`判断不相等才能发射出去.
 
 ### StateFlow vs LiveData
 `StateFlow`和`LiveData`很像.
@@ -102,8 +146,10 @@ val state = shared.distinctUntilChanged() // get StateFlow-like behavior
 * `StateFlow`需要一个初始值.
 * `LiveData`会自动解绑, flow要达到相同效果, collect要在`Lifecycle.repeatOnLifecycle`里.
 
+### Flow的安全收集
+关于收集Flow的方法, 主要还是关注一下生命周期的问题, 因为SharedFlow和StateFlow都是hot的.
+在这个文章里有详细的讨论: [A safer way to collect flows from Android UIs](https://medium.com/androiddevelopers/a-safer-way-to-collect-flows-from-android-uis-23080b1f8bda)
 
-### 使用Flow注意事项
 在UI层收集的时候注意要用`repeatOnLifecycle`:
 ```kotlin
 class LatestNewsActivity : AppCompatActivity() {
@@ -132,7 +178,7 @@ class LatestNewsActivity : AppCompatActivity() {
 }
 ```
 
-这里有个扩展方法也挺好的:
+这个[文章](https://proandroiddev.com/android-singleliveevent-redux-with-kotlin-flow-b755c70bb055)里有个扩展方法也挺好的:
 ```kotlin
 class FlowObserver<T> (
     lifecycleOwner: LifecycleOwner,
@@ -171,9 +217,86 @@ inline fun <reified T> Flow<T>.observeInLifecycle(
     lifecycleOwner: LifecycleOwner
 ) = FlowObserver(lifecycleOwner, this, {})
 ```
-TODO: 看一下官方的`repeatOnLifecycle`是不是就是这个意思.
+
+看了一下官方的`repeatOnLifecycle`其实大概也是这个意思:
+```kotlin
+public suspend fun Lifecycle.repeatOnLifecycle(
+    state: Lifecycle.State,
+    block: suspend CoroutineScope.() -> Unit
+) {
+    require(state !== Lifecycle.State.INITIALIZED) {
+        "repeatOnLifecycle cannot start work with the INITIALIZED lifecycle state."
+    }
+
+    if (currentState === Lifecycle.State.DESTROYED) {
+        return
+    }
+
+    // This scope is required to preserve context before we move to Dispatchers.Main
+    coroutineScope {
+        withContext(Dispatchers.Main.immediate) {
+            // Check the current state of the lifecycle as the previous check is not guaranteed
+            // to be done on the main thread.
+            if (currentState === Lifecycle.State.DESTROYED) return@withContext
+
+            // Instance of the running repeating coroutine
+            var launchedJob: Job? = null
+
+            // Registered observer
+            var observer: LifecycleEventObserver? = null
+            try {
+                // Suspend the coroutine until the lifecycle is destroyed or
+                // the coroutine is cancelled
+                suspendCancellableCoroutine<Unit> { cont ->
+                    // Lifecycle observers that executes `block` when the lifecycle reaches certain state, and
+                    // cancels when it falls below that state.
+                    val startWorkEvent = Lifecycle.Event.upTo(state)
+                    val cancelWorkEvent = Lifecycle.Event.downFrom(state)
+                    val mutex = Mutex()
+                    observer = LifecycleEventObserver { _, event ->
+                        if (event == startWorkEvent) {
+                            // Launch the repeating work preserving the calling context
+                            launchedJob = this@coroutineScope.launch {
+                                // Mutex makes invocations run serially,
+                                // coroutineScope ensures all child coroutines finish
+                                mutex.withLock {
+                                    coroutineScope {
+                                        block()
+                                    }
+                                }
+                            }
+                            return@LifecycleEventObserver
+                        }
+                        if (event == cancelWorkEvent) {
+                            launchedJob?.cancel()
+                            launchedJob = null
+                        }
+                        if (event == Lifecycle.Event.ON_DESTROY) {
+                            cont.resume(Unit)
+                        }
+                    }
+                    this@repeatOnLifecycle.addObserver(observer as LifecycleEventObserver)
+                }
+            } finally {
+                launchedJob?.cancel()
+                observer?.let {
+                    this@repeatOnLifecycle.removeObserver(it)
+                }
+            }
+        }
+    }
+}
+
+```
+既然官方已经推出了, 我们就用官方的`repeatOnLifecycle`方法吧.
 
 ### `shareIn`和`stateIn`
+前面提过这两个操作符是用来做flow转换的:
+* [sharedIn](https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/share-in.html)
+可以把cold flow转成hot的SharedFlow.
+* [stateIn](https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/state-in.html)
+可以把cold flow转成hot的StateFlow.
+
 `shareIn`可以保证只有一个数据源被创造, 并且被所有collectors收集.
 比如:
 ```kotlin
@@ -267,3 +390,4 @@ onCreateView(...) {
 * [Substituting Android’s LiveData: StateFlow or SharedFlow?](https://proandroiddev.com/should-we-choose-kotlins-stateflow-or-sharedflow-to-substitute-for-android-s-livedata-2d69f2bd6fa5)
 * [Learning State & Shared Flows with Unit Tests](https://codingwithmohit.com/coroutines/learning-shared-and-state-flows-with-tests/)
 * [Reactive Streams on Kotlin: SharedFlow and StateFlow](https://www.raywenderlich.com/22030171-reactive-streams-on-kotlin-sharedflow-and-stateflow)
+* [Reading Coroutine official guide thoroughly — Part 0](https://myungpyo.medium.com/reading-coroutine-official-guide-thoroughly-part-0-942c4567f91a)
