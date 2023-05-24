@@ -9,6 +9,11 @@
 - 一旦取消一个scope, 你将不能再在其中launch新的coroutine.
 - 一个在取消状态的coroutine是不能suspend的.
 
+如果一个coroutine抛出了异常, 它将会把这个exception向上抛给它的parent, 它的parent会做以下三件事情:
+- 取消其他所有的children.
+- 取消自己.
+- 把exception继续向上传递.
+
 
 ## Android开发中的取消
 在Android开发中, 比较常见的情形是由于View生命周期的终止, 我们需要取消一些操作.
@@ -34,14 +39,34 @@ kotlin官方提供的suspend方法都会有cancel的处理, 但是我们自己�
 众所周知catch一个很general的`Exception`类型可能不是一个好做法.
 因为你以为捕获了A, B, C异常, 结果实际上还有D, E, F.
 
-在开发阶段的快速失败会帮助我们更早定位和解决问题.
+捕获具体的异常类型, 在开发阶段的快速失败会帮助我们更早定位和解决问题.
 
 
 协程还推出了一个"方便"的`runCatching`方法, catch`Throwable`.
-让我们写出了看似更"保险", 但却更容易忽略取消机制的代码.
+让我们写出了看似更"保险", 但却更容易破坏取消机制的代码.
 
-###
-CancellationException的特殊处理
+这里有个open issue讨论这个问题: https://github.com/Kotlin/kotlinx.coroutines/issues/1814
+
+
+### CancellationException的特殊处理
+如何解决上面的问题呢? 基本方案是把`CancellationException`再throw出来.
+
+比如对于runCatching的改造, NowInAndroid里有这么一个方法[suspendRunCatching](https://github.com/android/nowinandroid/blob/607c24e7f7399942e278af663ea4ad350e5bbc3a/core/data/src/main/java/com/google/samples/apps/nowinandroid/core/data/SyncUtilities.kt#L57):
+
+```kotlin
+private suspend fun <T> suspendRunCatching(block: suspend () -> T): Result<T> = try {
+    Result.success(block())
+} catch (cancellationException: CancellationException) {
+    throw cancellationException
+} catch (exception: Exception) {
+    Log.i(
+        "suspendRunCatching",
+        "Failed to evaluate a suspendRunCatchingBlock. Returning failure Result",
+        exception
+    )
+    Result.failure(exception)
+}
+```
 
 ## 不想取消的处理
 可能还有一些工作我们不想随着job的取消而完全取消.
@@ -90,7 +115,17 @@ class MyApplication : Application() {
 ```
 再把这个scope注入到repository中去.
 
-## 总结: 再看Structured concurrency
+如果需要做的工作比application的生命周期更长, 那么可以考虑用`WorkManager`.
+
+## 不要随便传递job
+`CoroutineContext`有一个元素是job, 但是这并不意味着我们可以像切Dispatcher一样随便传一个job参数进去.
+文章: [Structured Concurrency Anniversary](https://elizarov.medium.com/structured-concurrency-anniversary-f2cc748b2401)
+
+看这里: https://github.com/Kotlin/kotlinx.coroutines/issues/1001
+
+## 总结: 再看Structured Concurrency
+Structure Concurrency为开发者提供了方便管理多个coroutines的有效方法.
+基本上破坏Structure Concurrency特性的行为(比如用GlobalScope, 用NonCancellable, catch CancellationException等)都是反模式, 要小心使用.
 
 
 ## References & Further Reading
