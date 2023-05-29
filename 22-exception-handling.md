@@ -1,25 +1,5 @@
 # 协程中的异常处理
 
-## catch不住的exception
-看这个代码片段:
-```kotlin
-fun main() {
-    val scope = CoroutineScope(Job())
-    try {
-        scope.launch {
-            throw RuntimeException()
-        }
-    } catch (e: Exception) {
-        println("Caught: $e")
-    }
-
-    Thread.sleep(100)
-}
-```
-这里的异常能catch住吗? 为什么?
-
-我这么问了肯定是catch不住的, 但是如何解释呢?
-
 ## Parent-Child关系
 如果一个coroutine抛出了异常, 它将会把这个exception向上抛给它的parent, 它的parent会做一下三件事情:
 - 取消其他所有的children.
@@ -30,7 +10,7 @@ fun main() {
 
 ### 默认的异常处理
 
-### 如果不想让失败取消parent和其他siblings
+### 如果不想让失败取消parent和其他siblings: SupervisorJob
 如果有一些情形, 开启了多个child job, 但是却不想因为其中一个的失败而取消其他, 怎么办?
 用`SupervisorJob`.
 
@@ -48,23 +28,69 @@ viewModelScope的context就是用了`SupervisorJob() + Dispatchers.Main.immediat
 
 除了把取消变为单向的, `supervisorScope`也会和`coroutineScope一样`等待所有child执行结束.
 
+使用注意事项:
+`SupervisorJob`只有两种写法: 
+- 作为`CoroutineScope`的参数传入: `CoroutineScope(SupervisorJob())`.
+- 使用`supervisorScope`方法.
+
+把Job作为coroutine builder(比如launch)的参数传入是错误的做法, 不起作用, 因为一个新的coroutine总会assign一个新的Job.
 
 ## 异常处理的办法
 ### `try-catch`
+和普通的异常处理一样, 我们可以用try-catch:
+```kotlin
+fun main() {
+    val scope = CoroutineScope(Job())
+    scope.launch {
+        try {
+            throw RuntimeException()
+        } catch (e: Exception) {
+            println("Caught: $e")
+        }
+    }
+
+    Thread.sleep(100)
+}
+```
+
 对于launch, try要包住整块.
 对于async, try要包住await语句.
 
+### catch不住的exception
+看这个代码片段:
+```kotlin
+fun main() {
+    val scope = CoroutineScope(Job())
+    try {
+        scope.launch {
+            throw RuntimeException()
+        }
+    } catch (e: Exception) {
+        println("Caught: $e")
+    }
+
+    Thread.sleep(100)
+}
+```
+这里的异常catch不住了.
+
+这是因为和普通的异常处理机制不同, coroutine中未被处理的异常并不是直接抛出, 而是向上传递给parent.
+
+
 ### `CoroutineExceptionHandler`
+`CoroutineExceptionHandler`是异常处理的最后一个机制, 此时coroutine已经结束了, 在这里的处理通常是报告log, 展示错误等.
+
 `CoroutineExceptionHandler`需要加在root coroutine上.
 
 这是因为child coroutines会把异常处理代理到它们的parent, 后者继续代理到自己的parent, 一直到root.
 所以对于非root的coroutine来说, 即便指定了`CoroutineExceptionHandler`也没有用.
 
+
 两个例外: 
 - `async`的异常在`Deferred`对象中, `CoroutineExceptionHandler`也没有任何作用.
 - supervision scope下的coroutine不会向上传递exception, 所以`CoroutineExceptionHandler`不用加在root上, 每个coroutine都可以加, 单独处理.
 
-通过这个例子可以看出: `CoroutineExceptionHandler`只有当所有child都结束之后才会处理异常信息.
+通过这个例子可以看出另一个特性: `CoroutineExceptionHandler`只有当所有child都结束之后才会处理异常信息.
 ```kotlin
 @OptIn(DelicateCoroutinesApi::class)
 fun main() = runBlocking {
