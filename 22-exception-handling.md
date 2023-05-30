@@ -35,6 +35,11 @@ viewModelScope的context就是用了`SupervisorJob() + Dispatchers.Main.immediat
 
 把Job作为coroutine builder(比如launch)的参数传入是错误的做法, 不起作用, 因为一个新的coroutine总会assign一个新的Job.
 
+在`supervisorScope`中直接启动的coroutine是顶级coroutine.
+顶级coroutine的特性:
+- 可以加exception handler.
+- 自己处理exception.
+
 ## 异常处理的办法
 ### `try-catch`
 和普通的异常处理一样, 我们可以用try-catch:
@@ -75,6 +80,47 @@ fun main() {
 这里的异常catch不住了.
 
 这是因为和普通的异常处理机制不同, coroutine中未被处理的异常并不是直接抛出, 而是向上传递给parent.
+
+
+### scope function
+`coroutineScope`会把其中的exception抛出来.
+
+相比较于这段代码中catch不到的exception:
+```kotlin
+fun main() {
+    val scope = CoroutineScope(Job())
+    scope.launch {
+        try {
+            launch {
+                throw RuntimeException()
+            }
+        } catch (e: Exception) {
+            println("Caught: $e")
+        }
+    }
+    Thread.sleep(100)
+}
+```
+
+这个exception是可以catch到的:
+```kotlin
+fun main() {
+    val scope = CoroutineScope(Job())
+    scope.launch {
+        try {
+            coroutineScope {
+                launch {
+                    throw RuntimeException()
+                }
+            }
+        } catch (e: Exception) {
+            println("Caught: $e")
+        }
+    }
+
+    Thread.sleep(100)
+}
+```
 
 
 ### `CoroutineExceptionHandler`
@@ -120,6 +166,13 @@ fun main() = runBlocking {
 ```
 
 如果多个child都抛出异常, 只有第一个被handler处理, 其他都在`exception.suppressed`字段里.
+
+### 单独说一下async
+async比较特殊:
+- 作为top coroutine时, 在await的时候try-catch异常.
+- 如果是非top coroutine, async块里的异常会被立即抛出.
+
+
 
 ## 特殊的`CancellationException`
 `CancellationException`是特殊的exception, 会被异常处理机制忽略, 即便抛出也不会向上传递, 所以不会取消它的parent.
