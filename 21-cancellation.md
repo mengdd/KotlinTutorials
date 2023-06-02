@@ -1,5 +1,7 @@
 # 协程的取消
-本文讨论协程的取消, 以及实现时可能会碰到的几个s问题.
+本文讨论协程的取消, 以及实现时可能会碰到的几个问题.
+
+![coroutine cancellation](./images/couroutine-cancellation.png)
 
 ## 协程的取消
 取消的意义: 避免资源浪费, 以及多余操作带来的问题.
@@ -34,6 +36,28 @@ kotlin官方提供的suspend方法都会有cancel的处理, 但是我们自己�
 - `ensureActive()`
 - `yield()`: 除了ensureActive以外, 会出让资源, 比如其他工作不需要再往线程池里加线程.
 
+一个在循环中检查coroutine是否依然活跃的例子:
+```kotlin
+fun main() = runBlocking {
+    val startTime = currentTimeMillis()
+    val job = launch(Dispatchers.Default) {
+        var nextPrintTime = startTime
+        var i = 0
+        while (isActive) { // cancellable computation loop
+            // print a message twice a second
+            if (currentTimeMillis() >= nextPrintTime) {
+                println("job: I'm sleeping ${i++} ...")
+                nextPrintTime += 500L
+            }
+        }
+    }
+    delay(1300L) // delay a bit
+    println("main: I'm tired of waiting!")
+    job.cancelAndJoin() // cancels the job and waits for its completion
+    println("main: Now I can quit.")
+}
+```
+
 
 ## catch Exception和runCatching
 众所周知catch一个很general的`Exception`类型可能不是一个好做法.
@@ -41,9 +65,35 @@ kotlin官方提供的suspend方法都会有cancel的处理, 但是我们自己�
 
 捕获具体的异常类型, 在开发阶段的快速失败会帮助我们更早定位和解决问题.
 
-
 协程还推出了一个"方便"的`runCatching`方法, catch`Throwable`.
 让我们写出了看似更"保险", 但却更容易破坏取消机制的代码.
+
+如果我们catch了`CancellationException`, 会破坏Structured Concurrency.
+看这个例子:
+```kotlin
+fun main() = runBlocking {
+    val job = launch(Dispatchers.Default) {
+        println("my long time function start")
+        myLongTimeFunction()
+        println("my other operations ==== ") // this line should not be printed when cancelled
+    }
+    delay(1300L) // delay a bit
+    println("main: I'm tired of waiting!")
+    job.cancelAndJoin() // cancels the job and waits for its completion
+    println("main: Now I can quit.")
+}
+
+private suspend fun myLongTimeFunction() = runCatching {
+    var i = 0
+    while (i < 10) {
+        // print a message twice a second
+        println("job: I'm sleeping ${i++} ...")
+        delay(500)
+    }
+}
+```
+当job cancel了以后后续的工作不应该继续进行, 然而我们可以看到log仍然被打印出来, 这是因为`runCatching`把异常全都catch了.
+
 
 这里有个open issue讨论这个问题: https://github.com/Kotlin/kotlinx.coroutines/issues/1814
 
@@ -67,6 +117,7 @@ private suspend fun <T> suspendRunCatching(block: suspend () -> T): Result<T> = 
     Result.failure(exception)
 }
 ```
+上面的例子改为用这个`suspendRunCatching`方法替代`runCatching`就修好了.
 
 ## 不想取消的处理
 可能还有一些工作我们不想随着job的取消而完全取消.
@@ -117,15 +168,16 @@ class MyApplication : Application() {
 
 如果需要做的工作比application的生命周期更长, 那么可以考虑用`WorkManager`.
 
-## 不要随便传递job
+
+## 总结: 不要破坏Structured Concurrency
+Structure Concurrency为开发者提供了方便管理多个coroutines的有效方法.
+基本上破坏Structure Concurrency特性的行为(比如用GlobalScope, 用NonCancellable, catch CancellationException等)都是反模式, 要小心使用.
+
+还要注意不要随便传递job.
 `CoroutineContext`有一个元素是job, 但是这并不意味着我们可以像切Dispatcher一样随便传一个job参数进去.
 文章: [Structured Concurrency Anniversary](https://elizarov.medium.com/structured-concurrency-anniversary-f2cc748b2401)
 
 看这里: https://github.com/Kotlin/kotlinx.coroutines/issues/1001
-
-## 总结: 再看Structured Concurrency
-Structure Concurrency为开发者提供了方便管理多个coroutines的有效方法.
-基本上破坏Structure Concurrency特性的行为(比如用GlobalScope, 用NonCancellable, catch CancellationException等)都是反模式, 要小心使用.
 
 
 ## References & Further Reading
