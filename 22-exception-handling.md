@@ -1,6 +1,6 @@
 # 协程中的异常处理
 
-![coroutine exception handling](./images/couroutine-exception-handling.png)
+![coroutine exception handling](./images/coroutine-exception-handling.png)
 
 ## Parent-Child关系
 如果一个coroutine抛出了异常, 它将会把这个exception向上抛给它的parent, 它的parent会做一下三件事情:

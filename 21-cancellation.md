@@ -1,7 +1,7 @@
 # 协程的取消
 本文讨论协程的取消, 以及实现时可能会碰到的几个问题.
 
-![coroutine cancellation](./images/couroutine-cancellation.png)
+![coroutine cancellation](./images/coroutine-cancellation.png)
 
 ## 协程的取消
 取消的意义: 避免资源浪费, 以及多余操作带来的问题.
