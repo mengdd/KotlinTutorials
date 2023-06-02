@@ -27,10 +27,11 @@ fun main() {
 }
 ```
 这里的异常catch不住了.
+会直接让main函数的主进程崩掉.
 
 这是因为和普通的异常处理机制不同, coroutine中未被处理的异常并不是直接抛出, 而是按照job hierarchy向上传递给parent.
 
-如果把try放在lauch里面还行.
+如果把try放在launch里面还行.
 
 ### 默认的异常处理
 默认情况下, child发生异常, parent和其他child也会被取消.
@@ -132,7 +133,7 @@ end
 
 viewModelScope的context就是用了`SupervisorJob() + Dispatchers.Main.immediate`.
 
-除了把取消变为单向的, `supervisorScope`也会和`coroutineScope一样`等待所有child执行结束.
+除了把取消变为单向的, `supervisorScope`也会和`coroutineScope`一样等待所有child执行结束.
 
 在`supervisorScope`中直接启动的coroutine是顶级coroutine.
 顶级coroutine的特性:
@@ -149,7 +150,7 @@ viewModelScope的context就是用了`SupervisorJob() + Dispatchers.Main.immediat
 
 ## 异常处理的办法
 ### `try-catch`
-和普通的异常处理一样, 我们可以用try-catch:
+和普通的异常处理一样, 我们可以用try-catch, 只是注意要再在coroutine里面:
 ```kotlin
 fun main() {
     val scope = CoroutineScope(Job())
@@ -163,6 +164,11 @@ fun main() {
 
     Thread.sleep(100)
 }
+```
+
+这样就能打印出:
+```
+Caught: java.lang.RuntimeException
 ```
 
 对于launch, try要包住整块.
@@ -187,6 +193,7 @@ fun main() {
     Thread.sleep(100)
 }
 ```
+没走到catch里, 仍然是主进程崩溃.
 
 这个exception是可以catch到的:
 ```kotlin
@@ -207,17 +214,22 @@ fun main() {
     Thread.sleep(100)
 }
 ```
+打印出:
+```
+Caught: java.lang.RuntimeException
+```
 因为这里`coroutineScope`把异常又重新抛出来了.
 
 注意这里换成`supervisorScope`可是不行的.
 
 ### `CoroutineExceptionHandler`
 `CoroutineExceptionHandler`是异常处理的最后一个机制, 此时coroutine已经结束了, 在这里的处理通常是报告log, 展示错误等.
+如果不加exception handler那么unhandled exception会进一步往外抛, 如果最后都没人处理, 那么可能造成进程崩溃.
 
 `CoroutineExceptionHandler`需要加在root coroutine上.
 
 这是因为child coroutines会把异常处理代理到它们的parent, 后者继续代理到自己的parent, 一直到root.
-所以对于非root的coroutine来说, 即便指定了`CoroutineExceptionHandler`也没有用.
+所以对于非root的coroutine来说, 即便指定了`CoroutineExceptionHandler`也没有用, 因为异常不会传到它.
 
 
 两个例外: 
@@ -252,8 +264,41 @@ fun main() = runBlocking {
     job.join()
 }
 ```
+输出:
+```
+Second child throws an exception
+Children are cancelled, but exception is not handled until all children terminate
+The first child finished its non cancellable block
+CoroutineExceptionHandler got java.lang.ArithmeticException
+```
 
 如果多个child都抛出异常, 只有第一个被handler处理, 其他都在`exception.suppressed`字段里.
+```kotlin
+fun main() = runBlocking {
+    val handler = CoroutineExceptionHandler { _, exception ->
+        println("CoroutineExceptionHandler got $exception with suppressed ${exception.suppressed.contentToString()}")
+    }
+    val job = GlobalScope.launch(handler) {
+        launch {
+            try {
+                delay(Long.MAX_VALUE) // it gets cancelled when another sibling fails with IOException
+            } finally {
+                throw ArithmeticException() // the second exception
+            }
+        }
+        launch {
+            delay(100)
+            throw IOException() // the first exception
+        }
+        delay(Long.MAX_VALUE)
+    }
+    job.join()
+}
+```
+输出:
+```
+CoroutineExceptionHandler got java.io.IOException with suppressed [java.lang.ArithmeticException]
+```
 
 ## 单独说一下async
 async比较特殊:
@@ -303,6 +348,7 @@ fun main() {
 `CancellationException`是特殊的exception, 会被异常处理机制忽略, 即便抛出也不会向上传递, 所以不会取消它的parent.
 但是`CancellationException`不能被catch, 如果它不被抛出, 其实协程没有被成功cancel, 还会继续执行.
 
+CancellationException的透明特性:
 如果`CancellationException`是由内部的其他异常引起的, 它会向上传递, 并且把原始的那个异常传递上去.
 ```kotlin
 @OptIn(DelicateCoroutinesApi::class)
@@ -328,6 +374,13 @@ fun main() = runBlocking {
     job.join()
 }
 ```
+
+输出:
+```
+Rethrowing CancellationException with original cause
+CoroutineExceptionHandler got java.io.IOException
+```
+这里Handler拿到的是最原始的IOException.
 
 ## Further Reading
 

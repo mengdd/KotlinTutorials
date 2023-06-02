@@ -57,7 +57,14 @@ fun main() = runBlocking {
     println("main: Now I can quit.")
 }
 ```
-
+输出:
+```
+job: I'm sleeping 0 ...
+job: I'm sleeping 1 ...
+job: I'm sleeping 2 ...
+main: I'm tired of waiting!
+main: Now I can quit.
+```
 
 ## catch Exception和runCatching
 众所周知catch一个很general的`Exception`类型可能不是一个好做法.
@@ -92,6 +99,16 @@ private suspend fun myLongTimeFunction() = runCatching {
     }
 }
 ```
+输出:
+```
+my long time function start
+job: I'm sleeping 0 ...
+job: I'm sleeping 1 ...
+job: I'm sleeping 2 ...
+main: I'm tired of waiting!
+my other operations ==== 
+main: Now I can quit.
+```
 当job cancel了以后后续的工作不应该继续进行, 然而我们可以看到log仍然被打印出来, 这是因为`runCatching`把异常全都catch了.
 
 
@@ -118,6 +135,16 @@ private suspend fun <T> suspendRunCatching(block: suspend () -> T): Result<T> = 
 }
 ```
 上面的例子改为用这个`suspendRunCatching`方法替代`runCatching`就修好了.
+
+上面例子的输出变为:
+```
+my long time function start
+job: I'm sleeping 0 ...
+job: I'm sleeping 1 ...
+job: I'm sleeping 2 ...
+main: I'm tired of waiting!
+main: Now I can quit.
+```
 
 ## 不想取消的处理
 可能还有一些工作我们不想随着job的取消而完全取消.
